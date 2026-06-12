@@ -757,7 +757,11 @@
     } catch (e) {
       S.sending = false;
       render(0, true);
-      toast('No pudimos guardar la reserva. Probá de nuevo en unos segundos.', 'err');
+      /* el detalle del error va al toast y a la consola: sin esto es
+         imposible diagnosticar fallas que solo pasan en producción */
+      console.error('[reserva] createReserva falló:', e);
+      const det = e && (e.code || e.message) ? ' (' + String(e.code || e.message).slice(0, 60) + ')' : '';
+      toast('No pudimos guardar la reserva. Probá de nuevo en unos segundos.' + det, 'err');
     }
   }
 
