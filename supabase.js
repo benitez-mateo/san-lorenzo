@@ -218,6 +218,26 @@ const MAX_JUGADORES = 40;
     return function () { window.removeEventListener('storage', h); };
   }
 
+  /** Guarda una suscripción de notificaciones push (tabla push_subs).
+      rol 'duenio': upsert (requiere sesión del panel; re-asienta el rol).
+      rol 'cliente': insert que ignora duplicados (el teléfono solo se ata
+      la primera vez; alcanza para matchear los recordatorios). */
+  async function savePushSub(subJson, rol, telefono) {
+    if (!configured) return null; // modo demo: no hay backend que envíe push
+    const fila = {
+      endpoint: subJson.endpoint,
+      sub: subJson,
+      rol: rol === 'duenio' ? 'duenio' : 'cliente',
+      telefono: telefono || null
+    };
+    const opts = rol === 'duenio'
+      ? { onConflict: 'endpoint' }
+      : { onConflict: 'endpoint', ignoreDuplicates: true };
+    const { error } = await sb().from('push_subs').upsert(fila, opts);
+    if (error) throw error;
+    return true;
+  }
+
   /** Cambia el estado de una reserva ('confirmada' | 'pendiente' | 'cancelada').
       Lo usa el panel: verificar una transferencia o liberar el horario. */
   async function updateEstado(id, estado) {
@@ -364,6 +384,7 @@ const MAX_JUGADORES = 40;
       getHorasOcupadas: getHorasOcupadas,
       getReservasSemanaCount: getReservasSemanaCount,
       onReservasChange: onReservasChange,
+      savePushSub: savePushSub,
       createReserva: createReserva,
       updateEstado: updateEstado,
       getBloqueos: getBloqueos,

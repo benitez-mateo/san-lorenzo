@@ -146,6 +146,17 @@
         if (vista === 'calendario') loadMes();
       }, 400);
     });
+
+    /* avisos push del dueño: banner de permiso la primera vez; si ya hay
+       permiso, re-asienta la suscripción como 'duenio' en cada carga */
+    if (C.push) {
+      C.push.asegurar('duenio');
+      C.push.init({
+        texto: '🔔 Activá los avisos para enterarte al instante de cada reserva nueva, aunque tengas el panel cerrado.',
+        boton: 'Activar avisos',
+        onSub: function (sub) { C.push.guardar(sub, 'duenio'); }
+      });
+    }
   }
 
   /* ---------- vistas ---------- */

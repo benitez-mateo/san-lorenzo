@@ -167,6 +167,41 @@ a { -webkit-tap-highlight-color: transparent; }
 .t-blue { background: var(--color-navy); }
 .t-white { background: #FFFFFF; }
 
+/* ---------- banner de permiso de notificaciones ----------
+   En flujo normal al tope del body: empuja el contenido hacia abajo,
+   no tapa nada (la nav es sticky y queda debajo hasta que scrollea). */
+.push-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+}
+.push-banner .pb-acts { display: flex; gap: 8px; }
+.push-banner button {
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  min-height: 32px;
+}
+.push-banner .pb-si { background: var(--color-accent); color: #fff; border: 0; }
+.push-banner .pb-si:hover { filter: brightness(1.1); }
+.push-banner .pb-no {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+.push-banner .pb-no:hover { color: var(--color-text); }
+
 /* ---------- banner offline ---------- */
 .offline-banner {
   position: fixed;

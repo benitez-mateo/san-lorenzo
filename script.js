@@ -57,6 +57,14 @@
       $('#heroProof').hidden = n < 3;
     }).catch(function () {});
 
+    /* avisos push (primera visita): banner arriba, sin tapar nada */
+    if (C.push) {
+      C.push.init({
+        texto: '🔔 ¿Querés que te avisemos cuando se acerque tu turno reservado?',
+        boton: 'Activar avisos'
+      });
+    }
+
     /* video de fondo del hero */
     if (CFG.HERO_VIDEO) {
       const v = document.createElement('video');
@@ -753,6 +761,9 @@
       S.sending = false;
       S.done = row;
       render(1);
+      /* si activó los avisos, atamos su teléfono a la suscripción para que
+         le lleguen los recordatorios de este turno */
+      if (C.push) C.push.asegurar('cliente', '+54 ' + S.telefono.trim());
       if (!C.configured) toast('Reserva guardada en modo demo (configurá Supabase y MercadoPago para producción).');
     } catch (e) {
       S.sending = false;
