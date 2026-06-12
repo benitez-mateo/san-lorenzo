@@ -180,6 +180,44 @@ const MAX_JUGADORES = 40;
     return occ;
   }
 
+  /** Cantidad de reservas activas de la semana en curso (lunes a domingo).
+      La usa el hero del sitio público como prueba social real. */
+  async function getReservasSemanaCount() {
+    const d = new Date();
+    const lunes = new Date(d); lunes.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+    const desde = toISO(lunes), hasta = toISO(domingo);
+    if (configured) {
+      const { count, error } = await sb().from('reservas')
+        .select('id', { count: 'exact', head: true })
+        .gte('fecha', desde).lte('fecha', hasta)
+        .neq('estado', 'cancelada');
+      if (error) throw error;
+      return count || 0;
+    }
+    demoSeed();
+    return demoRead().filter(r =>
+      r.fecha >= desde && r.fecha <= hasta && r.estado !== 'cancelada'
+    ).length;
+  }
+
+  /** Avisa cuando cambia cualquier reserva (alta, verificación, cancelación).
+      Lo usa el panel para refrescarse en tiempo real. Devuelve una función
+      para desuscribirse. Requiere que la tabla esté en la publicación
+      `supabase_realtime` (ver README sección 3.1). */
+  function onReservasChange(cb) {
+    if (configured) {
+      const ch = sb().channel('reservas-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, function () { cb(); })
+        .subscribe();
+      return function () { sb().removeChannel(ch); };
+    }
+    /* demo: cambios hechos desde otra pestaña del mismo navegador */
+    const h = function (e) { if (e.key === DEMO_KEY) cb(); };
+    window.addEventListener('storage', h);
+    return function () { window.removeEventListener('storage', h); };
+  }
+
   /** Cambia el estado de una reserva ('confirmada' | 'pendiente' | 'cancelada').
       Lo usa el panel: verificar una transferencia o liberar el horario. */
   async function updateEstado(id, estado) {
@@ -324,6 +362,8 @@ const MAX_JUGADORES = 40;
     db: {
       getReservas: getReservas,
       getHorasOcupadas: getHorasOcupadas,
+      getReservasSemanaCount: getReservasSemanaCount,
+      onReservasChange: onReservasChange,
       createReserva: createReserva,
       updateEstado: updateEstado,
       getBloqueos: getBloqueos,

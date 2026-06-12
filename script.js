@@ -45,11 +45,17 @@
       $$('[data-config="telefono-link"]').forEach(el => { el.href = 'tel:' + CFG.TELEFONO_LINK; });
     }
 
-    /* prueba social del hero */
+    /* prueba social del hero: se calcula sola con las reservas reales de la
+       semana (lunes a domingo). CFG.RESERVAS_SEMANA se muestra solo mientras
+       carga o si la consulta falla; con menos de 3 reservas se oculta. */
     if (CFG.RESERVAS_SEMANA) {
       $('#heroProofNum').textContent = '+' + CFG.RESERVAS_SEMANA;
       $('#heroProof').hidden = false;
     }
+    C.db.getReservasSemanaCount().then(function (n) {
+      $('#heroProofNum').textContent = '+' + n;
+      $('#heroProof').hidden = n < 3;
+    }).catch(function () {});
 
     /* video de fondo del hero */
     if (CFG.HERO_VIDEO) {

@@ -20,14 +20,17 @@ window.SLM_CONFIG = {
   // transfiere desde Ualá, Brubank, MercadoPago, su banco, etc.
   // ⚠ Reemplazá por el alias REAL antes de publicar. Vacío ('') = la
   //   opción de transferencia no aparece y solo se ofrece MercadoPago.
-  ALIAS_TRANSFERENCIA: 'club.slm.demo',
+  ALIAS_TRANSFERENCIA: 'sergiogrelli',
   // Nombre del titular tal como figura en la cuenta (para verificar
   // que la transferencia va a la cuenta correcta).
-  ALIAS_TITULAR: 'Club Atlético San Lorenzo de Muñiz',
+  ALIAS_TITULAR: 'Sergio Luis Greli',
 
   /* --- Hero --- */
-  // Prueba social: "+N reservas esta semana". Poné null para ocultarla.
-  RESERVAS_SEMANA: 27,
+  // Prueba social: "+N reservas esta semana". El número REAL se calcula solo
+  // con las reservas de la semana (y se oculta si hay menos de 3); este valor
+  // solo se muestra un instante mientras carga, o si la consulta falla.
+  // Poné null para no mostrar nada hasta tener el dato real.
+  RESERVAS_SEMANA: null,
   // Video de fondo en loop (ej: 'video/cancha.mp4'). Vacío = gradiente animado.
   HERO_VIDEO: '',
 

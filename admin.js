@@ -127,6 +127,17 @@
     checkNotifs();
     setInterval(checkNotifs, 60 * 1000);
     setInterval(function () { if (esHoy()) loadDia(); }, 5 * 60 * 1000);
+
+    /* tiempo real: cuando alguien reserva (o cambia una reserva) se refresca
+       la vista sola, sin tocar nada. Debounce por si llegan varios cambios. */
+    let rtTimer = null;
+    C.db.onReservasChange(function () {
+      clearTimeout(rtTimer);
+      rtTimer = setTimeout(function () {
+        loadDia();
+        if (vista === 'calendario') loadMes();
+      }, 400);
+    });
   }
 
   /* ---------- vistas ---------- */
