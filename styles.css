@@ -1543,6 +1543,56 @@ body.fab-visible .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 
 /* reserva por transferencia sin verificar: pide acción del dueño */
 .ag-booking.pendiente { border: 2px solid var(--color-amber); }
+
+/* tarjetas cortas (1-2 h): miden lo que dura la reserva (no pisan a la
+   siguiente) y se expanden al tocarlas para ver el detalle completo */
+.ag-booking.compacta { cursor: pointer; }
+.ag-booking.h1 { padding: 5px 10px; }
+.ag-booking.h1 .ag-bk-name { font-size: 13px; }
+.ag-booking.h1 .ag-bk-time { font-size: 11px; }
+.ag-booking.h1 .pay-badge { font-size: 10px; padding: 3px 6px; }
+.ag-booking.h1 .ag-bk-meta,
+.ag-booking.h2 .ag-bk-meta { display: none; }
+.ag-booking.expandida { height: auto !important; z-index: 6; padding: 10px 12px; }
+.ag-booking.expandida .ag-bk-meta { display: grid; }
+
+/* panel "Transferencias a confirmar": acciones fuera del timeline */
+.pend-panel { margin: 14px 0 4px; }
+.pend-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-amber-text);
+  margin-bottom: 8px;
+}
+.pend-list { display: grid; gap: 10px; }
+.pend-item {
+  background: #1A1A2E;
+  color: #fff;
+  border: 2px solid var(--color-amber);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(26, 26, 46, 0.25);
+}
+.pend-name { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.5px; }
+.pend-cancha {
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  padding: 3px 7px;
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+.pend-meta { font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.95); margin-top: 4px; }
+.pend-item .ag-actions { margin-top: 0; }
+
 .ag-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .ag-btn {
   border: 1.5px solid rgba(255, 255, 255, 0.5);

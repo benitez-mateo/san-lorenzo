@@ -108,12 +108,20 @@
       if (hb && !hb.disabled) toggleHora(+hb.getAttribute('data-bh'));
     });
 
-    /* agenda: verificar / liberar reservas por transferencia (delegado) */
+    /* agenda: verificar / liberar reservas por transferencia, y expandir
+       tarjetas cortas del timeline (delegado) */
     $('#vistaAgenda').addEventListener('click', function (e) {
       const v = e.target.closest('[data-verif]');
       if (v) { verificarPago(v.getAttribute('data-verif')); return; }
       const l = e.target.closest('[data-liberar]');
-      if (l) liberarReserva(l.getAttribute('data-liberar'));
+      if (l) { liberarReserva(l.getAttribute('data-liberar')); return; }
+      const bk = e.target.closest('.ag-booking.compacta');
+      if (bk) toggleBooking(bk);
+    });
+    $('#vistaAgenda').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const bk = e.target.closest('.ag-booking.compacta');
+      if (bk) { e.preventDefault(); toggleBooking(bk); }
     });
 
     $('#notifClose').addEventListener('click', function () {
@@ -177,6 +185,7 @@
       bloqueosDia = res[1];
       if (esHoy()) reservasHoy = reservasDia;
       renderSummary(reservasDia);
+      renderPendientes();
       if (vista === 'agenda') {
         renderTimeline('pasto', 'tlPasto');
         renderTimeline('cemento', 'tlCemento');
@@ -252,6 +261,41 @@
     return tramos;
   }
 
+  /* Panel "Transferencias a confirmar": las reservas pendientes con sus
+     botones de acción, arriba de la agenda. Los botones van acá y no en la
+     tarjeta del timeline porque una reserva corta (1 h) no tiene alto
+     suficiente para mostrarlos sin pisar a la reserva siguiente. */
+  function renderPendientes() {
+    const mount = $('#pendPanel');
+    if (!mount) return;
+    const pend = reservasDia.filter(r => r.estado === 'pendiente');
+    if (!pend.length) { mount.hidden = true; mount.innerHTML = ''; return; }
+    mount.innerHTML =
+      '<h2 class="pend-title">Transferencias a confirmar (' + pend.length + ')</h2>' +
+      '<div class="pend-list">' + pend.map(function (r) {
+        const ini = C.horaInt(r.hora_inicio);
+        const fin = ini + r.duracion_horas;
+        return '<div class="pend-item">' +
+          '<div class="pend-info">' +
+          '<p class="pend-name">' + esc(r.nombre) +
+          ' <span class="pend-cancha">' + (r.cancha === 'pasto' ? 'Pasto Sintético' : 'Cemento') + '</span></p>' +
+          '<p class="pend-meta">' + hh(ini) + ' – ' + hh(fin === 24 ? 0 : fin) +
+          ' · esperando que entre ' + fmt(r.monto_pagado) +
+          ' · ' + esc(r.telefono) + '</p>' +
+          '</div>' +
+          '<div class="ag-actions">' +
+          '<button type="button" class="ag-btn primario" data-verif="' + r.id + '">✓ Pago recibido</button>' +
+          '<button type="button" class="ag-btn" data-liberar="' + r.id + '">Liberar horario</button>' +
+          '</div></div>';
+      }).join('') + '</div>';
+    mount.hidden = false;
+  }
+
+  function toggleBooking(bk) {
+    const abierto = bk.classList.toggle('expandida');
+    bk.setAttribute('aria-expanded', String(abierto));
+  }
+
   function renderTimeline(court, mountId) {
     const START = C.HORA_APERTURA, END = C.HORA_CIERRE;
     let html = '';
@@ -270,15 +314,21 @@
         '</div></div></div>';
     }).join('');
 
+    /* la tarjeta mide exactamente lo que dura la reserva, así nunca pisa a la
+       siguiente. Las cortas (1-2 h) van compactas y se expanden al tocarlas;
+       los botones de verificar viven en el panel de arriba, no acá. */
     const propias = reservasDia.filter(r => r.cancha === court);
     const bloques = propias.map(function (r) {
       const ini = C.horaInt(r.hora_inicio);
       const fin = ini + r.duracion_horas;
       const pend = r.estado === 'pendiente';
+      const compacta = r.duracion_horas <= 2;
       const top = 'calc(var(--ag-row) * ' + (ini - START) + ' + 4px)';
       const height = 'calc(var(--ag-row) * ' + r.duracion_horas + ' - 8px)';
       return '<div class="ag-booking ' + (court === 'pasto' ? 'red' : 'navy') + (pend ? ' pendiente' : '') +
-        '" style="top:' + top + ';height:' + height + ';min-height:' + (pend ? 200 : 104) + 'px">' +
+        ' h' + Math.min(r.duracion_horas, 3) + (compacta ? ' compacta' : '') + '"' +
+        (compacta ? ' role="button" tabindex="0" aria-expanded="false" aria-label="' + esc(r.nombre) + ', ver detalles"' : '') +
+        ' style="top:' + top + ';height:' + height + '">' +
         '<div class="ag-bk-top"><div>' +
         '<p class="ag-bk-name">' + esc(r.nombre) + '</p>' +
         '<p class="ag-bk-time">' + hh(ini) + ' – ' + hh(fin === 24 ? 0 : fin) + '</p>' +
@@ -290,12 +340,6 @@
           ? (pend ? '⇄ Transferencia al alias — esperando que entre ' + fmt(r.monto_pagado) : '⇄ Transferencia verificada')
           : '✓ MercadoPago') + '</span>' +
         '</div>' +
-        (pend
-          ? '<div class="ag-actions">' +
-            '<button type="button" class="ag-btn primario" data-verif="' + r.id + '">✓ Pago recibido</button>' +
-            '<button type="button" class="ag-btn" data-liberar="' + r.id + '">Liberar horario</button>' +
-            '</div>'
-          : '') +
         '</div>';
     }).join('');
 
