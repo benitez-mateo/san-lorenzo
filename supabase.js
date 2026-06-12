@@ -5,8 +5,8 @@
    ⚠ CONFIGURACIÓN — reemplazá estos valores (ver README.md):
    ============================================================ */
 
-const SUPABASE_URL = 'TU_SUPABASE_URL';            // ej: https://abcdefgh.supabase.co
-const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY';  // anon public key
+const SUPABASE_URL = 'https://knjqwqkmenvnbrvsabfh.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_xEYjb12DXlb-9-LCF5B2mQ_X9aOAToH';  // anon public key
 const ADMIN_EMAIL = 'admin@sanlorenzodemuniz.com'; // email del usuario admin en Supabase Auth
 
 /* MercadoPago — links de pago (ver README.md sección 6) */
