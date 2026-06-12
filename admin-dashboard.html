@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel admin · Agenda</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#1A1A2E" />
+  <link rel="preload" href="fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/oswald-700-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="dash">
+    <nav class="dash-nav" aria-label="Panel">
+      <div class="dash-nav-inner">
+        <div class="dash-brand">
+          <svg class="s" viewBox="0 0 100 116" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs><clipPath id="shieldClipDash"><path d="M50 2 L96 16 V58 C96 86 76 104 50 114 C24 104 4 86 4 58 V16 Z" /></clipPath></defs>
+            <path d="M50 2 L96 16 V58 C96 86 76 104 50 114 C24 104 4 86 4 58 V16 Z" fill="#10101E" stroke="#0A0A14" stroke-width="2" />
+            <g clip-path="url(#shieldClipDash)">
+              <g transform="rotate(-26 50 58)">
+                <rect x="-30" y="-2" width="20" height="160" fill="#D0021B" />
+                <rect x="6" y="-2" width="20" height="160" fill="#D0021B" />
+                <rect x="42" y="-2" width="20" height="160" fill="#D0021B" />
+              </g>
+            </g>
+            <circle cx="50" cy="50" r="22" fill="#fff" stroke="#0A0A14" stroke-width="2" />
+            <text x="50" y="57" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="20" fill="#1A1A2E" letter-spacing="1">SLM</text>
+          </svg>
+          <span class="t">PANEL ADMIN</span>
+        </div>
+        <button class="logout-btn" id="logoutBtn" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </nav>
+
+    <main class="dash-body">
+      <!-- resumen del día -->
+      <div class="summary-bar">
+        <div class="sum-pill">
+          <div class="sum-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg></div>
+          <div class="sum-text"><span class="sum-num" id="sumTotal">—</span><span class="sum-label" id="sumTotalLabel">reservas</span></div>
+        </div>
+        <div class="sum-pill">
+          <div class="sum-icon navy" aria-hidden="true"><svg width="24" height="20" viewBox="0 0 52 40" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="2" y="3" width="48" height="34" rx="2"/><path d="M26 3v34"/><circle cx="26" cy="20" r="6"/></svg></div>
+          <div class="sum-text"><span class="sum-label" id="sumCanchas">—</span></div>
+        </div>
+        <div class="sum-pill">
+          <div class="sum-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5.5C17 3.6 14.8 2.5 12 2.5S7 3.6 7 5.5 9.2 8.5 12 9s5 1.5 5 3.5-2.2 3-5 3-5-1.1-5-3"/></svg></div>
+          <div class="sum-text"><span class="sum-num red" id="sumPlata">—</span><span class="sum-label">recaudado</span></div>
+        </div>
+      </div>
+
+      <!-- selector de vista -->
+      <div class="view-toggle" role="tablist" aria-label="Vista de reservas">
+        <button class="vt-btn active" data-vista="agenda" role="tab" aria-selected="true" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          Agenda del día
+        </button>
+        <button class="vt-btn" data-vista="calendario" role="tab" aria-selected="false" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>
+          Calendario
+        </button>
+      </div>
+
+      <!-- ===== VISTA AGENDA ===== -->
+      <div id="vistaAgenda">
+      <!-- navegador de fecha -->
+      <div class="date-nav">
+        <button class="date-arrow" id="prevDay" type="button" aria-label="Día anterior"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="date-center">
+          <h1 class="date-title" id="dateTitle" aria-live="polite">—</h1>
+          <span class="hoy-pill" id="hoyPill" hidden>Hoy</span>
+        </div>
+        <button class="date-arrow" id="nextDay" type="button" aria-label="Día siguiente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+
+      <!-- tabs solo mobile -->
+      <div class="ag-tabs" role="tablist" aria-label="Cancha">
+        <button class="ag-tab active" data-tab="pasto" role="tab" aria-selected="true" type="button">Pasto Sintético</button>
+        <button class="ag-tab" data-tab="cemento" role="tab" aria-selected="false" type="button">Cemento</button>
+      </div>
+
+      <!-- agenda -->
+      <div class="agenda" id="agenda" data-show="pasto">
+        <div class="ag-col" data-court="pasto">
+          <h2 class="ag-col-title red">Pasto Sintético</h2>
+          <div class="ag-timeline" id="tlPasto"></div>
+        </div>
+        <div class="ag-col" data-court="cemento">
+          <h2 class="ag-col-title navy">Cemento</h2>
+          <div class="ag-timeline" id="tlCemento"></div>
+        </div>
+      </div>
+      </div><!-- /vistaAgenda -->
+
+      <!-- ===== VISTA CALENDARIO (bloqueos) ===== -->
+      <div id="vistaCal" hidden>
+        <div class="adm-cal-grid">
+          <div>
+            <div class="cal" id="admCal"></div>
+            <p class="cal-hint">Elegí un día para ver sus horarios y bloquear el día completo u horas puntuales (feriados, días sin actividad), para el club entero o para una sola cancha.</p>
+          </div>
+          <div class="day-panel" id="dayPanel" aria-live="polite"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- notificación flotante -->
+    <div class="notif" id="notif" role="status" aria-live="polite">
+      <div class="notif-top">
+        <p class="notif-title" id="notifTitle">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span id="notifTitleText"></span>
+        </p>
+        <button class="notif-close" id="notifClose" type="button" aria-label="Cerrar notificación"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="notif-badge-row" id="notifBadge"></div>
+      <p class="notif-sub" id="notifSub"></p>
+      <p class="notif-foot" id="notifFoot"></p>
+    </div>
+  </div>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.min.js" integrity="sha384-UQ9Ztz63gzT2JZCuDRkNXV8RP/gXxdPUuM9LKlz2BzqGx9xFYNAK8yAEgbfZHs7P" crossorigin="anonymous"></script>
+  <script defer src="supabase.js"></script>
+  <script defer src="admin.js"></script>
+</body>
+</html>

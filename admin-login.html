@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceso restringido · Panel administrativo</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#1A1A2E" />
+  <link rel="preload" href="fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/oswald-700-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="login-page">
+    <form class="login-card" id="loginForm" novalidate>
+      <svg class="brand-shield" viewBox="0 0 100 116" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs><clipPath id="shieldClipLogin"><path d="M50 2 L96 16 V58 C96 86 76 104 50 114 C24 104 4 86 4 58 V16 Z" /></clipPath></defs>
+        <path d="M50 2 L96 16 V58 C96 86 76 104 50 114 C24 104 4 86 4 58 V16 Z" fill="#1A1A2E" stroke="#10101E" stroke-width="2" />
+        <g clip-path="url(#shieldClipLogin)">
+          <g transform="rotate(-26 50 58)">
+            <rect x="-30" y="-2" width="20" height="160" fill="#D0021B" />
+            <rect x="6" y="-2" width="20" height="160" fill="#D0021B" />
+            <rect x="42" y="-2" width="20" height="160" fill="#D0021B" />
+          </g>
+        </g>
+        <circle cx="50" cy="50" r="22" fill="#fff" stroke="#10101E" stroke-width="2" />
+        <text x="50" y="57" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="20" fill="#1A1A2E" letter-spacing="1">SLM</text>
+      </svg>
+
+      <p class="login-kicker">PANEL ADMINISTRATIVO</p>
+      <h1 class="login-title">Acceso restringido</h1>
+
+      <div class="field">
+        <label for="pw">Contraseña</label>
+        <div class="pw-wrap">
+          <input class="input" id="pw" type="password" autocomplete="current-password" required />
+          <button type="button" class="pw-toggle" id="pwToggle" aria-label="Mostrar contraseña" aria-pressed="false">
+            <svg class="ic-eye" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="ic-eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <p class="login-err" id="loginErr" role="alert"></p>
+
+      <button type="submit" class="btn btn-primary" id="loginBtn">Ingresar al panel</button>
+
+      <p class="demo-note" id="demoNote" hidden>Modo demo: Supabase no está configurado, podés ingresar con cualquier contraseña.</p>
+    </form>
+
+    <p class="login-foot">Esta página no está disponible desde el sitio público.</p>
+  </main>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.min.js" integrity="sha384-UQ9Ztz63gzT2JZCuDRkNXV8RP/gXxdPUuM9LKlz2BzqGx9xFYNAK8yAEgbfZHs7P" crossorigin="anonymous"></script>
+  <script defer src="supabase.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      'use strict';
+      var form = document.getElementById('loginForm');
+      var pw = document.getElementById('pw');
+      var btn = document.getElementById('loginBtn');
+      var err = document.getElementById('loginErr');
+
+      if (!window.SLM.configured) document.getElementById('demoNote').hidden = false;
+
+      /* si ya hay sesión, directo al panel */
+      window.SLM.auth.getSession().then(function (s) {
+        if (s) window.location.replace('admin-dashboard.html');
+      });
+
+      var toggle = document.getElementById('pwToggle');
+      toggle.addEventListener('click', function () {
+        var show = pw.type === 'password';
+        pw.type = show ? 'text' : 'password';
+        toggle.setAttribute('aria-pressed', String(show));
+        toggle.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        toggle.querySelector('.ic-eye').style.display = show ? 'none' : 'block';
+        toggle.querySelector('.ic-eye-off').style.display = show ? 'block' : 'none';
+        pw.focus();
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        err.textContent = '';
+        if (!pw.value) {
+          err.textContent = 'Ingresá la contraseña.';
+          pw.focus();
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Verificando…';
+        window.SLM.auth.signIn(pw.value).then(function (r) {
+          if (r.ok) {
+            window.location.replace('admin-dashboard.html');
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Ingresar al panel';
+            err.textContent = r.message || 'No se pudo iniciar sesión.';
+            pw.focus();
+            pw.select();
+          }
+        }).catch(function () {
+          btn.disabled = false;
+          btn.textContent = 'Ingresar al panel';
+          err.textContent = 'Error de conexión. Probá de nuevo.';
+        });
+      });
+    });
+  </script>
+</body>
+</html>
