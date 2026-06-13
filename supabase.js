@@ -225,10 +225,23 @@ const MAX_JUGADORES = 40;
   async function savePushSub(subJson, rol, telefono) {
     if (!configured) return null; // modo demo: no hay backend que envíe push
     if (rol === 'duenio') {
-      /* registrarse como dueño exige sesión activa: si venció, avisamos
-         claro en vez de dejar que RLS rechace con un error críptico */
-      const s = await getSession();
-      if (!s) throw new Error('Tu sesión del panel venció. Cerrá sesión, entrá de nuevo y reintentá.');
+      /* la sesión existe pero su JWT puede estar vencido — si no la
+         renovamos, supabase-js manda la petición como anónimo y RLS la
+         rechaza al insertar rol='duenio'. Renovamos primero, así el
+         INSERT viaja como authenticated. */
+      const cli = sb();
+      const { data: sd } = await cli.auth.getSession();
+      if (!sd || !sd.session) {
+        throw new Error('Tu sesión del panel venció. Cerrá sesión, entrá de nuevo y reintentá.');
+      }
+      const exp = sd.session.expires_at || 0;
+      const ahora = Math.floor(Date.now() / 1000);
+      if (exp - ahora < 60) {
+        const { data: rd, error: re } = await cli.auth.refreshSession();
+        if (re || !rd.session) {
+          throw new Error('Tu sesión del panel venció. Cerrá sesión, entrá de nuevo y reintentá.');
+        }
+      }
     }
     const fila = {
       endpoint: subJson.endpoint,
