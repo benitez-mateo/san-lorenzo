@@ -155,7 +155,19 @@
         texto: '🔔 Activá los avisos para enterarte al instante de cada reserva nueva, aunque tengas el panel cerrado.',
         boton: 'Activar avisos',
         temporal: true,
-        onSub: function (sub) { C.push.guardar(sub, 'duenio'); }
+        onSub: function (sub) {
+          C.push.guardar(sub, 'duenio').then(function () {
+            showNotif({
+              titulo: 'Avisos activados',
+              badge: '<span class="pay-badge green">' + IC.check + ' LISTO</span>',
+              sub: 'Vas a recibir una notificación por cada reserva nueva.',
+              foot: 'Funciona aunque tengas el panel cerrado.'
+            });
+          }).catch(function (e) {
+            avisar('La suscripción se creó pero no se pudo guardar: ' +
+              esc((e && e.message) || e) + '. Probá de nuevo desde diagnostico-avisos.html.');
+          });
+        }
       });
     }
   }

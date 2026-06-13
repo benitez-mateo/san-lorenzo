@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico de avisos · SLM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body { font-family: system-ui, sans-serif; background: #0F0F1A; color: #fff; padding: 18px; line-height: 1.5; }
+    h1 { font-size: 20px; margin-bottom: 14px; }
+    .fila { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; background: #1A1A2E; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; margin-bottom: 8px; font-size: 14px; }
+    .fila b { text-align: right; word-break: break-all; }
+    .ok { color: #4ade80; } .mal { color: #f87171; } .meh { color: #fbbf24; }
+    button { width: 100%; margin-top: 12px; padding: 14px; border: 0; border-radius: 10px; background: #D0021B; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; }
+    button.sec { background: #1A3FA8; }
+    #log { margin-top: 14px; padding: 12px; background: #000; border-radius: 10px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; min-height: 60px; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Diagnóstico de avisos</h1>
+  <div id="estado">Cargando…</div>
+  <button id="btnSus" hidden>🔔 Suscribirme como DUEÑO</button>
+  <button id="btnTest" class="sec" hidden>Probar una notificación local</button>
+  <div id="log">listo.</div>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.min.js" integrity="sha384-UQ9Ztz63gzT2JZCuDRkNXV8RP/gXxdPUuM9LKlz2BzqGx9xFYNAK8yAEgbfZHs7P" crossorigin="anonymous"></script>
+  <script defer src="config.js"></script>
+  <script defer src="supabase.js"></script>
+  <script defer src="push.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', async function () {
+      const $ = s => document.querySelector(s);
+      const log = m => { $('#log').textContent += '\n' + m; };
+      const filas = [];
+      const f = (k, v, cls) => filas.push('<div class="fila"><span>' + k + '</span><b class="' + (cls || '') + '">' + v + '</b></div>');
+
+      const sw = 'serviceWorker' in navigator;
+      const pm = 'PushManager' in window;
+      const noti = 'Notification' in window;
+      f('Service Worker', sw ? 'soportado' : 'NO soportado', sw ? 'ok' : 'mal');
+      f('Web Push', pm ? 'soportado' : 'NO soportado (¿iPhone sin instalar?)', pm ? 'ok' : 'mal');
+      f('Notificaciones', noti ? Notification.permission : 'NO soportado',
+        !noti ? 'mal' : Notification.permission === 'granted' ? 'ok' : Notification.permission === 'denied' ? 'mal' : 'meh');
+
+      let reg = null, sub = null;
+      if (sw) {
+        try {
+          reg = await navigator.serviceWorker.register('sw.js');
+          await navigator.serviceWorker.ready;
+          sub = await reg.pushManager.getSubscription();
+        } catch (e) { log('Error SW: ' + e); }
+      }
+      f('SW registrado', reg ? 'sí' : 'no', reg ? 'ok' : 'mal');
+      f('Suscripción en este navegador', sub ? 'sí' : 'todavía no', sub ? 'ok' : 'meh');
+
+      let sesion = null;
+      try { sesion = await window.SLM.auth.getSession(); } catch (e) { log('Error sesión: ' + e); }
+      f('Sesión de admin', sesion ? 'sí' : 'NO (entrá por admin-login.html primero)', sesion ? 'ok' : 'mal');
+      f('Supabase configurado', window.SLM.configured ? 'sí' : 'no (demo)', window.SLM.configured ? 'ok' : 'mal');
+
+      $('#estado').innerHTML = filas.join('');
+      $('#btnSus').hidden = false;
+      $('#btnTest').hidden = false;
+
+      $('#btnSus').addEventListener('click', async function () {
+        try {
+          log('Pidiendo permiso…');
+          const p = await Notification.requestPermission();
+          log('Permiso: ' + p);
+          if (p !== 'granted') { log('⚠ Sin permiso no se puede. Si dice "denied", desbloqueá las notificaciones del sitio en el navegador (candado junto a la URL).'); return; }
+          log('Suscribiendo…');
+          const s = await window.SLM.push.subscribe();
+          log('Suscripción creada: ' + s.endpoint.slice(0, 60) + '…');
+          log('Guardando en la base como duenio…');
+          await window.SLM.push.guardar(s, 'duenio');
+          log('✅ GUARDADO OK. Ya podés recibir avisos de reservas nuevas.');
+        } catch (e) {
+          log('❌ ERROR: ' + (e && e.message ? e.message : e) + (e && e.code ? ' [' + e.code + ']' : ''));
+        }
+      });
+
+      $('#btnTest').addEventListener('click', async function () {
+        try {
+          if (Notification.permission !== 'granted') { log('Primero activá el permiso con el otro botón.'); return; }
+          const r = await navigator.serviceWorker.ready;
+          await r.showNotification('🔔 Prueba local', { body: 'Si ves esto, tu teléfono muestra las notificaciones bien.', icon: 'img/icon-192.png' });
+          log('Notificación local disparada.');
+        } catch (e) { log('❌ ERROR: ' + e); }
+      });
+    });
+  </script>
+</body>
+</html>
