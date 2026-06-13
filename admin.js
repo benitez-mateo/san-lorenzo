@@ -115,6 +115,8 @@
       if (v) { verificarPago(v.getAttribute('data-verif')); return; }
       const l = e.target.closest('[data-liberar]');
       if (l) { liberarReserva(l.getAttribute('data-liberar')); return; }
+      const sc = e.target.closest('[data-saldo]');
+      if (sc) { cobrarSaldo(sc.getAttribute('data-saldo'), +sc.getAttribute('data-monto')); return; }
       const bk = e.target.closest('.ag-booking.compacta');
       if (bk) toggleBooking(bk);
     });
@@ -346,6 +348,8 @@
       const ini = C.horaInt(r.hora_inicio);
       const fin = ini + r.duracion_horas;
       const pend = r.estado === 'pendiente';
+      const saldo = (r.monto_total || 0) - (r.monto_pagado || 0);
+      const faltaCobrar = !pend && r.tipo_pago === 'sena' && saldo > 0;
       const compacta = r.duracion_horas <= 2;
       const top = 'calc(var(--ag-row) * ' + (ini - START) + ' + 4px)';
       const height = 'calc(var(--ag-row) * ' + r.duracion_horas + ' - 8px)';
@@ -363,7 +367,11 @@
         '<span class="r">' + (r.medio_pago === 'transferencia'
           ? (pend ? '⇄ Transferencia al alias — esperando que entre ' + fmt(r.monto_pagado) : '⇄ Transferencia verificada')
           : '✓ MercadoPago') + '</span>' +
+        (faltaCobrar ? '<span class="r saldo-r">💵 Falta cobrar el saldo de ' + fmt(saldo) + '</span>' : '') +
         '</div>' +
+        (faltaCobrar
+          ? '<div class="ag-actions"><button type="button" class="ag-btn primario" data-saldo="' + r.id + '" data-monto="' + r.monto_total + '">✓ Cobré el saldo</button></div>'
+          : '') +
         '</div>';
     }).join('');
 
@@ -672,6 +680,33 @@
       ok: 'Sí, liberar',
       cancelar: 'Cancelar'
     }).then(function (ok) { if (ok) cancelarReserva(r); });
+  }
+
+  function cobrarSaldo(id, monto) {
+    const r = reservasDia.find(x => String(x.id) === String(id));
+    if (!r) return;
+    const saldo = monto - r.monto_pagado;
+    modal({
+      titulo: 'Cobré el saldo',
+      mensaje: '¿Registrar que <strong>' + esc(r.nombre) + '</strong> pagó el saldo de ' + fmt(saldo) +
+        '? La reserva queda como pago completo.',
+      ok: '✓ Sí, lo cobré',
+      cancelar: 'Cancelar'
+    }).then(function (ok) { if (ok) confirmarSaldo(r, monto); });
+  }
+
+  function confirmarSaldo(r, monto) {
+    C.db.updateMontoPagado(r.id, monto).then(function () {
+      loadDia();
+      showNotif({
+        titulo: 'Saldo cobrado',
+        badge: '<span class="pay-badge green">' + IC.check + ' PAGO COMPLETO</span>',
+        sub: esc(r.nombre) + ' · ' + NOMBRE_CANCHA[r.cancha] + ' · ' + hh(C.horaInt(r.hora_inicio)) + ' quedó saldada.',
+        foot: 'El cliente la ve como pago completo en "Mis reservas".'
+      });
+    }).catch(function () {
+      avisar('No se pudo registrar el cobro. Revisá la conexión y probá de nuevo.');
+    });
   }
 
   function cancelarReserva(r) {

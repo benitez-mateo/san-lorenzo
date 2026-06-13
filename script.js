@@ -180,6 +180,7 @@
   document.addEventListener('click', e => {
     const go = e.target.closest('[data-go]');
     if (go) { goTo(go.getAttribute('data-go')); return; }
+    if (e.target.closest('[data-mis-reservas]')) { abrirMisReservas(); return; }
     const res = e.target.closest('[data-reservar]');
     if (res) {
       closeMenu();
@@ -781,6 +782,7 @@
 
       S.sending = false;
       S.done = row;
+      guardarMiReserva(row); // el navegador recuerda el turno para "Mis reservas"
       render(1);
       /* si activó los avisos, atamos su teléfono a la suscripción para que
          le lleguen los recordatorios de este turno */
@@ -808,6 +810,150 @@
     resetState();
     render(0);
     goTo('reservas');
+  }
+
+  /* ============================================================
+     "Mis reservas": el navegador recuerda los turnos que reservó
+     esta persona (no hay login) y al abrir el botón del hero
+     consulta el estado real en la base — si falta pagar, muestra
+     el alias; si ya está saldado, sirve de recordatorio.
+     ============================================================ */
+  const MIS_KEY = 'slm-mis-reservas';
+
+  function guardarMiReserva(r) {
+    try {
+      const list = JSON.parse(localStorage.getItem(MIS_KEY) || '[]');
+      if (!list.some(x => x.id === r.id)) list.push({ id: r.id, fecha: r.fecha });
+      localStorage.setItem(MIS_KEY, JSON.stringify(list));
+    } catch (e) {}
+    actualizarBotonMisReservas();
+  }
+
+  function misReservasIds() {
+    try {
+      const hoy = C.toISO(hoyDate());
+      const list = JSON.parse(localStorage.getItem(MIS_KEY) || '[]');
+      const vig = list.filter(x => x.fecha >= hoy); // las pasadas se descartan
+      if (vig.length !== list.length) localStorage.setItem(MIS_KEY, JSON.stringify(vig));
+      return vig.map(x => x.id);
+    } catch (e) { return []; }
+  }
+
+  function olvidarReservas(ids) {
+    if (!ids || !ids.length) return;
+    try {
+      const list = JSON.parse(localStorage.getItem(MIS_KEY) || '[]').filter(x => ids.indexOf(x.id) === -1);
+      localStorage.setItem(MIS_KEY, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function actualizarBotonMisReservas() {
+    const btn = $('#misReservasBtn');
+    if (!btn) return;
+    btn.hidden = misReservasIds().length === 0;
+  }
+
+  function copiarAlias(btn) {
+    const alias = aliasCfg();
+    const ok = () => {
+      btn.textContent = '¡Copiado!';
+      toast('Alias copiado. Pegalo en tu billetera.');
+      setTimeout(() => { btn.textContent = 'Copiar alias'; }, 2500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(alias).then(ok).catch(() => toast('No se pudo copiar. Anotalo: ' + alias, 'err'));
+    } else {
+      toast('Copialo a mano: ' + alias);
+    }
+  }
+
+  function aliasMiniHTML(r, monto, queCosa) {
+    const alias = aliasCfg();
+    if (!alias) return '';
+    const titular = (CFG.ALIAS_TITULAR || '').trim();
+    const wa = (CFG.TELEFONO_LINK || '').replace(/\D/g, '');
+    const msg = '¡Hola! Te paso el comprobante de ' + fmt(monto) + ' por ' + queCosa + ' de mi reserva en ' +
+      CANCHAS[r.cancha].nombre + ' el ' + fechaLarga(r.fecha) + ' a las ' + hh(C.horaInt(r.hora_inicio)) +
+      ' a nombre de ' + r.nombre + '.';
+    return '<div class="mr-alias">' +
+      '<span class="mr-alias-k">Transferí ' + fmt(monto) + ' al alias</span>' +
+      '<span class="mr-alias-v">' + esc(alias) + '</span>' +
+      (titular ? '<span class="mr-alias-t">Titular: ' + esc(titular) + '</span>' : '') +
+      '<div class="mr-alias-acts">' +
+      '<button type="button" class="btn btn-outline" data-copy-alias>Copiar alias</button>' +
+      (wa ? '<a class="btn btn-primary" href="https://wa.me/' + wa + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">Mandar comprobante</a>' : '') +
+      '</div></div>';
+  }
+
+  function miReservaHTML(r) {
+    const fin = C.horaInt(r.hora_inicio) + r.duracion_horas;
+    const saldo = (r.monto_total || 0) - (r.monto_pagado || 0);
+    const pendiente = r.estado === 'pendiente';
+    const pagado = saldo <= 0;
+    let cuerpo;
+    if (pendiente) {
+      cuerpo = '<div class="mr-estado warn">⏳ Estamos por confirmar tu transferencia de ' + fmt(r.monto_pagado) +
+        '. Cuando la verifiquemos te avisamos por WhatsApp y el turno queda asegurado.</div>' +
+        aliasMiniHTML(r, r.monto_pagado, 'la seña');
+    } else if (pagado) {
+      cuerpo = '<div class="mr-estado ok">✓ Pago completo. ¡Te esperamos!</div>';
+    } else {
+      cuerpo = '<div class="mr-estado">Señaste ' + fmt(r.monto_pagado) + '. Te falta pagar <strong>' + fmt(saldo) + '</strong>.</div>' +
+        aliasMiniHTML(r, saldo, 'el saldo') +
+        '<p class="mr-club">También podés abonar el saldo en el club el día del partido.</p>';
+    }
+    return '<div class="mr-item">' +
+      '<div class="mr-top"><strong>' + CANCHAS[r.cancha].nombre + '</strong>' +
+      '<span>' + fechaLarga(r.fecha) + ' · ' + hh(C.horaInt(r.hora_inicio)) + ' a ' + hh(fin === 24 ? 0 : fin) + '</span></div>' +
+      cuerpo + '</div>';
+  }
+
+  function escMis(e) { if (e.key === 'Escape') cerrarModalMis(); }
+
+  function cerrarModalMis() {
+    const ov = $('#misModal');
+    if (ov) ov.remove();
+    document.removeEventListener('keydown', escMis);
+  }
+
+  function montarModalMis(inner) {
+    cerrarModalMis();
+    const ov = document.createElement('div');
+    ov.className = 'modal-ov';
+    ov.id = 'misModal';
+    ov.innerHTML = '<div class="modal-card mr-card" role="dialog" aria-modal="true" aria-label="Mis reservas">' +
+      '<div class="mr-head"><h3 class="modal-tit">Mis reservas</h3>' +
+      '<button type="button" class="mr-close" aria-label="Cerrar">✕</button></div>' +
+      '<div class="mr-body">' + inner + '</div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', e => {
+      if (e.target === ov || e.target.closest('.mr-close')) { cerrarModalMis(); return; }
+      const copyBtn = e.target.closest('[data-copy-alias]');
+      if (copyBtn) copiarAlias(copyBtn);
+    });
+    document.addEventListener('keydown', escMis);
+    return ov;
+  }
+
+  async function abrirMisReservas() {
+    const ids = misReservasIds();
+    if (!ids.length) return;
+    const ov = montarModalMis('<p class="mr-load">Cargando tus reservas…</p>');
+    const body = ov.querySelector('.mr-body');
+    let rows = null;
+    try { rows = await C.db.getReservasByIds(ids); } catch (e) { rows = null; }
+    if (rows === null) {
+      body.innerHTML = '<p class="mr-empty">No pudimos cargar tus reservas. Probá de nuevo en unos segundos.</p>';
+      return;
+    }
+    olvidarReservas(rows.filter(r => r.estado === 'cancelada').map(r => r.id));
+    const hoy = C.toISO(hoyDate());
+    const vig = rows.filter(r => r.estado !== 'cancelada' && r.fecha >= hoy)
+      .sort((a, b) => (a.fecha + a.hora_inicio).localeCompare(b.fecha + b.hora_inicio));
+    body.innerHTML = vig.length
+      ? vig.map(miReservaHTML).join('')
+      : '<p class="mr-empty">No tenés reservas próximas.</p>';
+    actualizarBotonMisReservas();
   }
 
   /* ---------- eventos delegados ---------- */
@@ -943,20 +1089,7 @@
     }
 
     const copyBtn = t.closest('[data-copy-alias]');
-    if (copyBtn) {
-      const alias = aliasCfg();
-      const ok = () => {
-        copyBtn.textContent = '¡Copiado!';
-        toast('Alias copiado. Pegalo en tu billetera.');
-        setTimeout(() => { copyBtn.textContent = 'Copiar alias'; }, 2500);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(alias).then(ok).catch(() => toast('No se pudo copiar. Anotalo: ' + alias, 'err'));
-      } else {
-        toast('Copialo a mano: ' + alias);
-      }
-      return;
-    }
+    if (copyBtn) { copiarAlias(copyBtn); return; }
   });
 
   /* inputs de texto: actualizan estado sin re-render (no pierden el foco) */
@@ -991,4 +1124,5 @@
 
   /* ---------- arranque ---------- */
   render(0, true);
+  actualizarBotonMisReservas(); // muestra el botón del hero si ya hay reservas guardadas
 })();

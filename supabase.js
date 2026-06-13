@@ -238,6 +238,35 @@ const MAX_JUGADORES = 40;
     return true;
   }
 
+  /** Registra que se cobró el saldo: deja la reserva como pago completo.
+      Lo usa el panel cuando el cliente termina de pagar (en persona o por
+      transferencia del saldo). */
+  async function updateMontoPagado(id, monto) {
+    if (configured) {
+      const { data, error } = await sb().from('reservas')
+        .update({ monto_pagado: monto, tipo_pago: 'completo' }).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    }
+    const list = demoRead();
+    const r = list.find(x => x.id === id);
+    if (r) { r.monto_pagado = monto; r.tipo_pago = 'completo'; demoWrite(list); }
+    return r;
+  }
+
+  /** Reservas por lista de IDs (las que guardó el navegador del cliente).
+      La policy anon de SELECT ya permite leerlas; sirve para "Mis reservas". */
+  async function getReservasByIds(ids) {
+    if (!ids || !ids.length) return [];
+    if (configured) {
+      const { data, error } = await sb().from('reservas').select('*').in('id', ids);
+      if (error) throw error;
+      return data || [];
+    }
+    demoSeed();
+    return demoRead().filter(r => ids.indexOf(r.id) !== -1);
+  }
+
   /** Cambia el estado de una reserva ('confirmada' | 'pendiente' | 'cancelada').
       Lo usa el panel: verificar una transferencia o liberar el horario. */
   async function updateEstado(id, estado) {
@@ -383,8 +412,10 @@ const MAX_JUGADORES = 40;
       getReservas: getReservas,
       getHorasOcupadas: getHorasOcupadas,
       getReservasSemanaCount: getReservasSemanaCount,
+      getReservasByIds: getReservasByIds,
       onReservasChange: onReservasChange,
       savePushSub: savePushSub,
+      updateMontoPagado: updateMontoPagado,
       createReserva: createReserva,
       updateEstado: updateEstado,
       getBloqueos: getBloqueos,
