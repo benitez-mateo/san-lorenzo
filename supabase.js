@@ -224,6 +224,12 @@ const MAX_JUGADORES = 40;
       la primera vez; alcanza para matchear los recordatorios). */
   async function savePushSub(subJson, rol, telefono) {
     if (!configured) return null; // modo demo: no hay backend que envíe push
+    if (rol === 'duenio') {
+      /* registrarse como dueño exige sesión activa: si venció, avisamos
+         claro en vez de dejar que RLS rechace con un error críptico */
+      const s = await getSession();
+      if (!s) throw new Error('Tu sesión del panel venció. Cerrá sesión, entrá de nuevo y reintentá.');
+    }
     const fila = {
       endpoint: subJson.endpoint,
       sub: subJson,
