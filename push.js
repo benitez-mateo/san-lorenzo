@@ -67,12 +67,15 @@
   }
 
   /** Banner superior de permiso: en flujo (empuja el contenido, no tapa).
-      Solo si el navegador soporta push y el usuario todavía no decidió. */
+      Solo si el navegador soporta push y el usuario todavía no decidió.
+      opts.temporal: el "Ahora no" vale solo por esta sesión (lo usa el
+      panel: el dueño no debería perder los avisos para siempre por un toque). */
   function init(opts) {
     if (!soporta || !C) return;
     registrar().catch(function () {});
     if (Notification.permission !== 'default') return; // ya decidió antes
-    try { if (localStorage.getItem(KEY) === 'no') return; } catch (e) {}
+    const store = opts.temporal ? sessionStorage : localStorage;
+    try { if (store.getItem(KEY) === 'no') return; } catch (e) {}
 
     const bar = document.createElement('div');
     bar.className = 'push-banner';
@@ -89,7 +92,7 @@
     function cerrar() { bar.remove(); }
 
     bar.querySelector('.pb-no').addEventListener('click', function () {
-      try { localStorage.setItem(KEY, 'no'); } catch (e) {}
+      try { store.setItem(KEY, 'no'); } catch (e) {}
       cerrar();
     });
 

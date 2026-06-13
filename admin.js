@@ -154,6 +154,7 @@
       C.push.init({
         texto: '🔔 Activá los avisos para enterarte al instante de cada reserva nueva, aunque tengas el panel cerrado.',
         boton: 'Activar avisos',
+        temporal: true,
         onSub: function (sub) { C.push.guardar(sub, 'duenio'); }
       });
     }
@@ -491,6 +492,36 @@
       '<p class="cal-hint">Elegí si bloqueás el club entero o una sola cancha, y tocá una hora para bloquearla o desbloquearla. Las reservas ya hechas se mantienen: el bloqueo solo evita reservas nuevas.</p>';
   }
 
+  /* ---------- modal propio (reemplaza confirm/alert del navegador) ---------- */
+  function modal(opts) {
+    return new Promise(function (resolve) {
+      const prev = document.querySelector('.modal-ov');
+      if (prev) prev.remove();
+      const ov = document.createElement('div');
+      ov.className = 'modal-ov';
+      ov.innerHTML =
+        '<div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="modalTit" aria-describedby="modalMsg">' +
+        '<h3 class="modal-tit" id="modalTit">' + (opts.titulo || 'Confirmar') + '</h3>' +
+        '<p class="modal-msg" id="modalMsg">' + opts.mensaje + '</p>' +
+        '<div class="modal-acts">' +
+        (opts.cancelar === null ? '' : '<button type="button" class="ag-btn m-no">' + (opts.cancelar || 'Cancelar') + '</button>') +
+        '<button type="button" class="ag-btn primario m-si">' + (opts.ok || 'Confirmar') + '</button>' +
+        '</div></div>';
+      document.body.appendChild(ov);
+      function fin(v) { ov.remove(); resolve(v); }
+      ov.querySelector('.m-si').addEventListener('click', function () { fin(true); });
+      const no = ov.querySelector('.m-no');
+      if (no) no.addEventListener('click', function () { fin(false); });
+      ov.addEventListener('click', function (e) { if (e.target === ov) fin(false); });
+      ov.addEventListener('keydown', function (e) { if (e.key === 'Escape') fin(false); });
+      ov.querySelector('.m-si').focus();
+    });
+  }
+
+  function avisar(mensaje, titulo) {
+    return modal({ titulo: titulo || 'Algo salió mal', mensaje: mensaje, ok: 'Entendido', cancelar: null });
+  }
+
   /* ---------- acciones de bloqueo ---------- */
   function refrescarBloqueos() {
     loadDia();
@@ -499,7 +530,7 @@
 
   function correrOps(ops) {
     Promise.all(ops).then(refrescarBloqueos).catch(function () {
-      alert('No se pudo guardar el cambio. Revisá la conexión y probá de nuevo.');
+      avisar('No se pudo guardar el cambio. Revisá la conexión y probá de nuevo.');
       refrescarBloqueos();
     });
   }
@@ -555,15 +586,25 @@
         }
       });
     } else {
+      const bloquear = function () {
+        if (scopeBloq === 'ambas') fulls.forEach(b => ops.push(C.db.removeBloqueo(b.id))); // limpia los de una sola cancha
+        ops.push(C.db.addBloqueo(iso, null, scopeBloq));
+        correrOps(ops);
+      };
       const afectadas = scopeBloq === 'ambas' ? reservasDia : reservasDia.filter(r => r.cancha === scopeBloq);
       if (afectadas.length > 0) {
         const donde = scopeBloq === 'ambas' ? 'Este día' : NOMBRE_CANCHA[scopeBloq] + ' este día';
-        const ok = window.confirm(donde + ' tiene ' + afectadas.length + ' reserva' + (afectadas.length > 1 ? 's' : '') +
-          '. Se mantienen, pero el público no podrá hacer reservas nuevas. ¿Bloquear igual?');
-        if (!ok) return;
+        modal({
+          titulo: 'Bloquear con reservas hechas',
+          mensaje: donde + ' tiene ' + afectadas.length + ' reserva' + (afectadas.length > 1 ? 's' : '') +
+            '. Se mantienen, pero el público no podrá hacer reservas nuevas. ¿Bloquear igual?',
+          ok: 'Bloquear igual',
+          cancelar: 'Cancelar'
+        }).then(function (ok) { if (ok) bloquear(); });
+        return;
       }
-      if (scopeBloq === 'ambas') fulls.forEach(b => ops.push(C.db.removeBloqueo(b.id))); // limpia los de una sola cancha
-      ops.push(C.db.addBloqueo(iso, null, scopeBloq));
+      bloquear();
+      return;
     }
     if (ops.length) correrOps(ops);
   }
@@ -585,7 +626,15 @@
   function verificarPago(id) {
     const r = reservasDia.find(x => String(x.id) === String(id));
     if (!r) return;
-    if (!window.confirm('¿Confirmás que la transferencia de ' + r.nombre + ' (' + fmt(r.monto_pagado) + ') ya entró en la cuenta?')) return;
+    modal({
+      titulo: 'Verificar transferencia',
+      mensaje: '¿Confirmás que la transferencia de <strong>' + esc(r.nombre) + '</strong> (' + fmt(r.monto_pagado) + ') ya entró en la cuenta?',
+      ok: '✓ Sí, entró',
+      cancelar: 'Todavía no'
+    }).then(function (ok) { if (ok) confirmarPago(r); });
+  }
+
+  function confirmarPago(r) {
     C.db.updateEstado(r.id, 'confirmada').then(function () {
       loadDia();
       showNotif({
@@ -598,14 +647,22 @@
         ' del ' + fechaCortaISO(r.fecha) + ' a las ' + hh(C.horaInt(r.hora_inicio)) + ' quedó confirmada. ¡Te esperamos!';
       window.open(waLink(r.telefono, msg), '_blank', 'noopener');
     }).catch(function () {
-      alert('No se pudo actualizar la reserva. Revisá la conexión y probá de nuevo.');
+      avisar('No se pudo actualizar la reserva. Revisá la conexión y probá de nuevo.');
     });
   }
 
   function liberarReserva(id) {
     const r = reservasDia.find(x => String(x.id) === String(id));
     if (!r) return;
-    if (!window.confirm('¿Liberar el horario de ' + r.nombre + ' (' + hh(C.horaInt(r.hora_inicio)) + ')? La reserva se cancela y esas horas vuelven a ofrecerse en el sitio.')) return;
+    modal({
+      titulo: 'Liberar horario',
+      mensaje: '¿Liberar el horario de <strong>' + esc(r.nombre) + '</strong> (' + hh(C.horaInt(r.hora_inicio)) + ')? La reserva se cancela y esas horas vuelven a ofrecerse en el sitio.',
+      ok: 'Sí, liberar',
+      cancelar: 'Cancelar'
+    }).then(function (ok) { if (ok) cancelarReserva(r); });
+  }
+
+  function cancelarReserva(r) {
     C.db.updateEstado(r.id, 'cancelada').then(function () {
       loadDia();
       showNotif({
@@ -615,7 +672,7 @@
         foot: 'Esas horas ya se pueden volver a reservar.'
       });
     }).catch(function () {
-      alert('No se pudo actualizar la reserva. Revisá la conexión y probá de nuevo.');
+      avisar('No se pudo actualizar la reserva. Revisá la conexión y probá de nuevo.');
     });
   }
 
