@@ -57,13 +57,12 @@
       $('#heroProof').hidden = n < 3;
     }).catch(function () {});
 
-    /* avisos push (primera visita): banner arriba, sin tapar nada */
-    if (C.push) {
-      C.push.init({
-        texto: '🔔 ¿Querés que te avisemos cuando se acerque tu turno reservado?',
-        boton: 'Activar avisos'
-      });
-    }
+    /* el permiso de avisos al cliente se pide en la pantalla de éxito de la
+       reserva (mejor momento: ya reservó y tenemos su teléfono). No usamos
+       un banner en la primera visita: un rechazo prematuro bloquearía las
+       notificaciones para siempre y el opt-in post-reserva no podría pedirlas.
+       Solo registramos el service worker para que quede listo. */
+    if (C.push) C.push.registrarSW();
 
     /* video de fondo del hero */
     if (CFG.HERO_VIDEO) {
@@ -658,7 +657,29 @@
         ? (transfer ? 'Seña a transferir' : 'Seña pagada')
         : (transfer ? 'Total a transferir' : 'Total pagado')) + '</dt><dd class="v" style="margin:0">' + fmt(r.monto_pagado) + '</dd></div>' +
       '</dl>' +
+      succNotiHTML() +
       '</div>';
+  }
+
+  /* Opt-in de recordatorios para el cliente, en la pantalla de éxito:
+     el mejor momento para pedir permiso (acaba de reservar, está motivado
+     y ya tenemos su teléfono). Si el navegador no soporta push o ya lo
+     bloqueó, no mostramos nada. */
+  function succNotiHTML() {
+    if (!C.push || !C.push.soporta) return '';
+    const perm = (typeof Notification !== 'undefined') ? Notification.permission : 'denied';
+    if (perm === 'denied') return '';
+    if (perm === 'granted') {
+      return '<div class="succ-noti ok" id="succNoti">' +
+        '<span class="sn-ic" aria-hidden="true">🔔</span>' +
+        '<div class="sn-txt"><strong>Te vamos a avisar</strong>' +
+        '<span>Vas a recibir un recordatorio 30 minutos antes de tu turno.</span></div></div>';
+    }
+    return '<div class="succ-noti" id="succNoti">' +
+      '<span class="sn-ic" aria-hidden="true">🔔</span>' +
+      '<div class="sn-txt"><strong>¿Te recordamos tu turno?</strong>' +
+      '<span>Te avisamos 30 minutos antes, así no se te pasa.</span></div>' +
+      '<button type="button" class="btn btn-primary sn-btn" data-noti-on>Avisarme</button></div>';
   }
 
   /* ---------- validación paso 4 ---------- */
@@ -886,6 +907,38 @@
         m.setAttribute('aria-checked', String(sel));
       });
       syncFieldErr('medio', true);
+      return;
+    }
+
+    const notiBtn = t.closest('[data-noti-on]');
+    if (notiBtn && S.done) {
+      notiBtn.disabled = true;
+      notiBtn.textContent = 'Activando…';
+      Notification.requestPermission().then(function (p) {
+        if (p !== 'granted') {
+          notiBtn.disabled = false;
+          notiBtn.textContent = 'Avisarme';
+          toast('Para recibir el aviso, permití las notificaciones en tu navegador.', 'err');
+          return;
+        }
+        return C.push.asegurar('cliente', S.done.telefono).then(function (sub) {
+          const card = $('#succNoti', wizBody);
+          if (sub && card) {
+            card.classList.add('ok');
+            card.innerHTML = '<span class="sn-ic" aria-hidden="true">✓</span>' +
+              '<div class="sn-txt"><strong>¡Listo!</strong>' +
+              '<span>Te vamos a avisar 30 minutos antes de tu turno.</span></div>';
+          } else if (!sub) {
+            notiBtn.disabled = false;
+            notiBtn.textContent = 'Avisarme';
+            toast('No se pudo activar el aviso. Probá de nuevo.', 'err');
+          }
+        });
+      }).catch(function () {
+        notiBtn.disabled = false;
+        notiBtn.textContent = 'Avisarme';
+        toast('No se pudo activar el aviso. Probá de nuevo.', 'err');
+      });
       return;
     }
 

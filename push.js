@@ -107,9 +107,14 @@
     });
   }
 
+  function registrarSW() {
+    if (soporta) registrar().catch(function () {});
+  }
+
   window.SLM.push = {
     soporta: soporta,
     init: init,
+    registrarSW: registrarSW,
     subscribe: subscribe,
     guardar: guardar,
     asegurar: asegurar
