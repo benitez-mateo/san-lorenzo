@@ -224,35 +224,16 @@ const MAX_JUGADORES = 40;
       la primera vez; alcanza para matchear los recordatorios). */
   async function savePushSub(subJson, rol, telefono) {
     if (!configured) return null; // modo demo: no hay backend que envíe push
-    if (rol === 'duenio') {
-      /* la sesión existe pero su JWT puede estar vencido — si no la
-         renovamos, supabase-js manda la petición como anónimo y RLS la
-         rechaza al insertar rol='duenio'. Renovamos primero, así el
-         INSERT viaja como authenticated. */
-      const cli = sb();
-      const { data: sd } = await cli.auth.getSession();
-      if (!sd || !sd.session) {
-        throw new Error('Tu sesión del panel venció. Cerrá sesión, entrá de nuevo y reintentá.');
-      }
-      const exp = sd.session.expires_at || 0;
-      const ahora = Math.floor(Date.now() / 1000);
-      if (exp - ahora < 60) {
-        const { data: rd, error: re } = await cli.auth.refreshSession();
-        if (re || !rd.session) {
-          throw new Error('Tu sesión del panel venció. Cerrá sesión, entrá de nuevo y reintentá.');
-        }
-      }
-    }
-    const fila = {
-      endpoint: subJson.endpoint,
-      sub: subJson,
-      rol: rol === 'duenio' ? 'duenio' : 'cliente',
-      telefono: telefono || null
-    };
-    const opts = rol === 'duenio'
-      ? { onConflict: 'endpoint' }
-      : { onConflict: 'endpoint', ignoreDuplicates: true };
-    const { error } = await sb().from('push_subs').upsert(fila, opts);
+    /* Pasamos por una función SECURITY DEFINER (save_push_sub en la base)
+       en lugar de un INSERT directo: con los nuevos sb_publishable_* keys,
+       PostgREST a veces no reconoce la sesión y RLS rechaza el insert
+       como anónimo. La función bypassa eso de forma controlada. */
+    const { error } = await sb().rpc('save_push_sub', {
+      p_endpoint: subJson.endpoint,
+      p_sub: subJson,
+      p_rol: rol === 'duenio' ? 'duenio' : 'cliente',
+      p_telefono: telefono || null
+    });
     if (error) throw error;
     return true;
   }
