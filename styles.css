@@ -350,7 +350,7 @@ body.fab-visible .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   color: inherit;
   text-align: left;
 }
-.brand-shield { width: 38px; height: 44px; flex-shrink: 0; }
+.brand-shield { width: 38px; height: 44px; flex-shrink: 0; object-fit: contain; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
 .brand-kicker {
   font-size: 9px;
@@ -1408,7 +1408,7 @@ body.fab-visible .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 .footer { background-color: var(--color-footer-bg); color: #fff; margin-top: 24px; }
 .footer :focus-visible { outline-color: #fff; }
 .footer-body { padding: 48px 16px 40px; text-align: center; }
-.footer-shield { width: 60px; height: 70px; margin: 0 auto 14px; }
+.footer-shield { width: 60px; height: 70px; margin: 0 auto 14px; object-fit: contain; display: block; }
 .footer-name {
   font-family: var(--font-display);
   font-size: 22px;
@@ -1528,7 +1528,7 @@ body.fab-visible .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   gap: 10px;
 }
 .dash-brand { display: flex; align-items: center; gap: 10px; }
-.dash-brand .s { width: 32px; height: 38px; }
+.dash-brand .s { width: 32px; height: 38px; object-fit: contain; }
 .dash-brand .t {
   font-family: var(--font-display);
   font-size: 16px;
