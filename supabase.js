@@ -1,6 +1,6 @@
 /* ============================================================
    supabase.js — Cliente Supabase + capa de datos
-   Club Atlético San Lorenzo de Muñiz
+   Plantilla de reservas de canchas
 
    ⚠ CONFIGURACIÓN — reemplazá estos valores (ver README.md):
    ============================================================ */

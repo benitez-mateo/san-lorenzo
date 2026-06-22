@@ -1,6 +1,6 @@
 /* ============================================================
    push.js — Notificaciones del navegador (Web Push)
-   Club Atlético San Lorenzo de Muñiz
+   Plantilla de reservas de canchas
 
    Compartido por el sitio público y el panel admin:
    - registra el service worker (sw.js)

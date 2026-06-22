@@ -1,6 +1,6 @@
 /* ============================================================
    admin.js — panel del dueño
-   Club Atlético San Lorenzo de Muñiz
+   Plantilla de reservas de canchas
    Vistas: agenda del día (timeline) y calendario (bloqueos)
    ============================================================ */
 

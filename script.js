@@ -1,6 +1,6 @@
 /* ============================================================
    script.js — sitio público
-   Club Atlético San Lorenzo de Muñiz
+   Plantilla de reservas de canchas
    ============================================================ */
 
 (function () {

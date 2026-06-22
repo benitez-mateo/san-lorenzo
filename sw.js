@@ -1,6 +1,6 @@
 /* ============================================================
    sw.js — Service worker
-   Club Atlético San Lorenzo de Muñiz
+   Plantilla de reservas de canchas
 
    Recibe notificaciones push (Web Push) y maneja el click.
    Sin caché offline a propósito: las reservas se pagan online y
@@ -18,7 +18,7 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('push', function (e) {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { /* payload no JSON */ }
-  const titulo = d.title || 'Club San Lorenzo de Muñiz';
+  const titulo = d.title || 'Club Deportivo';
   e.waitUntil(self.registration.showNotification(titulo, {
     body: d.body || '',
     icon: 'img/icon-192.png',

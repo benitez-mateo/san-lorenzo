@@ -1,6 +1,6 @@
 /* ============================================================
    config.js — Datos editables del sitio
-   Club Atlético San Lorenzo de Muñiz
+   Plantilla de reservas de canchas
 
    Completá estos valores y listo: no hace falta tocar ningún
    otro archivo. Si un valor queda vacío ('' o null), el sitio
@@ -11,19 +11,19 @@ window.SLM_CONFIG = {
 
   /* --- Contacto --- */
   // Teléfono como se muestra en pantalla (sección Contacto).
-  TELEFONO: '+54 9 11 2651-0106',
+  TELEFONO: '+54 11 0000-0000',
   // Teléfono en formato para marcar (href tel:), sin espacios ni guiones.
-  TELEFONO_LINK: '+5491126510106',
+  TELEFONO_LINK: '+541100000000',
 
   /* --- Pago por transferencia (cualquier billetera virtual o banco) --- */
   // Alias de la cuenta del club (CBU/CVU). El que reserva lo copia y
   // transfiere desde Ualá, Brubank, MercadoPago, su banco, etc.
   // ⚠ Reemplazá por el alias REAL antes de publicar. Vacío ('') = la
   //   opción de transferencia no aparece y solo se ofrece MercadoPago.
-  ALIAS_TRANSFERENCIA: 'sergiogrelli',
+  ALIAS_TRANSFERENCIA: 'tu.alias.mp',
   // Nombre del titular tal como figura en la cuenta (para verificar
   // que la transferencia va a la cuenta correcta).
-  ALIAS_TITULAR: 'Sergio Luis Greli',
+  ALIAS_TITULAR: 'Nombre del Titular',
 
   /* --- Hero --- */
   // Prueba social: "+N reservas esta semana". El número REAL se calcula solo
